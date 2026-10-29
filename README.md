@@ -76,7 +76,7 @@ curl 'localhost:3000/v1/search?q=how+often+feed+starter&mode=hybrid&k=5&rerank=f
 | `k` | 1 to 50 | `10` |
 | `rerank` | `true`, `false` | `false` |
 
-`rerank=true` returns at most 20 hits, scored by the reranker (0 to 3). Without `ANTHROPIC_API_KEY` it returns 400 `rerank_unavailable`. Delete with `DELETE /v1/documents/:id` (204, or 404 if unknown). Errors are `{ "error": { "code", "message" } }`; a refusal or truncated reranker response is a 502 (`refusal`, `max_tokens`).
+`rerank=true` returns at most 20 hits, scored by the reranker (0 to 3). Without `ANTHROPIC_API_KEY` it returns 400 `rerank_unavailable`. Delete with `DELETE /v1/documents/:id` (204, or 404 if unknown). Errors are `{ "error": { "code", "message" } }`; a refusal or truncated reranker response is a 502 (`refusal`, `max_tokens`, `invalid_model_output`).
 
 ## Results
 
