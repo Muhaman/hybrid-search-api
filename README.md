@@ -82,7 +82,15 @@ curl 'localhost:3000/v1/search?q=how+often+feed+starter&mode=hybrid&k=5&rerank=f
 
 Run the benchmark with `npm run bench` (the CI `bench` job also writes the table to the job summary).
 
-Results pending the first green CI run.
+Real output of the CI `bench` job (run 40836460335): 60 synthetic documents, 20 synthetic queries with graded relevance, local `Xenova/all-MiniLM-L6-v2` embeddings, no reranking.
+
+| Mode | nDCG@10 | MRR |
+| --- | --- | --- |
+| bm25 | 0.892 | 0.967 |
+| vector | 0.957 | 0.975 |
+| hybrid | 0.967 | 1.000 |
+
+The dataset is tiny and hand-written, so treat the gaps as illustrative, not as evidence about real corpora.
 
 ## Design decisions & trade-offs
 
