@@ -101,6 +101,17 @@ describe("documents", () => {
   });
 });
 
+describe("rate limiting", () => {
+  it("returns a JSON 429 once the limit is exceeded, but never limits /healthz", async () => {
+    const app = createApp({ ...makeDeps(), rateLimitPerMinute: 1 });
+    expect((await request(app).get("/v1/search").query({ q: "x" })).status).toBe(200);
+    const limited = await request(app).get("/v1/search").query({ q: "x" });
+    expect(limited.status).toBe(429);
+    expect(limited.body).toEqual({ error: { code: "rate_limited", message: "Too many requests." } });
+    expect((await request(app).get("/healthz")).status).toBe(200);
+  });
+});
+
 describe("GET /healthz", () => {
   it("reports ok", async () => {
     const res = await request(createApp(makeDeps())).get("/healthz");

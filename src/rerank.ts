@@ -1,7 +1,7 @@
-import type Anthropic from "@anthropic-ai/sdk";
+import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
-import { AppError, LlmRefusalError, LlmTruncatedError } from "./errors.js";
+import { LlmInvalidOutputError, LlmRefusalError, LlmTruncatedError, LlmUpstreamError } from "./errors.js";
 
 export interface Reranker {
   rerank(query: string, docs: { id: string; text: string }[]): Promise<{ id: string; score: number }[]>;
@@ -31,24 +31,32 @@ export class ClaudeReranker implements Reranker {
       .map((doc) => `<document id=${JSON.stringify(doc.id)}>\n${doc.text.slice(0, MAX_DOC_CHARS)}\n</document>`)
       .join("\n");
 
-    const response = await this.client.messages.parse({
-      model: this.model,
-      max_tokens: MAX_TOKENS,
-      system: SYSTEM_PROMPT,
-      output_config: { effort: "low", format: zodOutputFormat(responseSchema) },
-      messages: [{ role: "user", content: `<query>${query}</query>\n\n${candidates}` }],
-    });
+    const response = await this.callModel(query, candidates);
 
     if (response.stop_reason === "refusal") {
       throw new LlmRefusalError(response.stop_details?.category ?? null);
     }
     if (response.stop_reason === "max_tokens") throw new LlmTruncatedError();
-    if (!response.parsed_output) {
-      throw new AppError(502, "rerank_failed", "The reranker returned an unparseable response.");
-    }
+    if (!response.parsed_output) throw new LlmInvalidOutputError();
     return response.parsed_output.scores.map(({ id, relevance }) => ({
       id,
       score: Math.min(3, Math.max(0, relevance)),
     }));
+  }
+
+  private async callModel(query: string, candidates: string) {
+    try {
+      return await this.client.messages.parse({
+        model: this.model,
+        max_tokens: MAX_TOKENS,
+        system: SYSTEM_PROMPT,
+        output_config: { effort: "low", format: zodOutputFormat(responseSchema) },
+        messages: [{ role: "user", content: `<query>${query}</query>\n\n${candidates}` }],
+      });
+    } catch (err) {
+      if (err instanceof Anthropic.APIError) throw new LlmUpstreamError();
+      if (err instanceof SyntaxError || err instanceof z.ZodError) throw new LlmInvalidOutputError();
+      throw err;
+    }
   }
 }

@@ -13,6 +13,8 @@ export interface AppDeps {
   engine: SearchEngine;
   corsOrigins: string[];
   logger: Logger;
+  /** Requests allowed per client per minute; defaults to 120. */
+  rateLimitPerMinute?: number;
 }
 
 export function createApp(deps: AppDeps): Express {
@@ -35,11 +37,22 @@ export function createApp(deps: AppDeps): Express {
 
   app.use(helmet());
   app.use(cors({ origin: deps.corsOrigins }));
-  app.use(rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: "draft-8", legacyHeaders: false }));
 
   app.get("/healthz", (_req, res) => {
     res.json({ status: "ok" });
   });
+
+  app.use(
+    rateLimit({
+      windowMs: 60_000,
+      limit: deps.rateLimitPerMinute ?? 120,
+      standardHeaders: "draft-8",
+      legacyHeaders: false,
+      handler: (_req, res) => {
+        res.status(429).json({ error: { code: "rate_limited", message: "Too many requests." } });
+      },
+    }),
+  );
 
   app.use("/v1/documents", express.json({ limit: "10mb" }), documentsRouter(deps.engine));
   app.use("/v1/search", searchRouter(deps.engine));

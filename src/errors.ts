@@ -31,6 +31,20 @@ export class LlmTruncatedError extends AppError {
   }
 }
 
+export class LlmInvalidOutputError extends AppError {
+  constructor() {
+    super(502, "invalid_model_output", "The model returned output that did not match the expected schema.");
+    this.name = "LlmInvalidOutputError";
+  }
+}
+
+export class LlmUpstreamError extends AppError {
+  constructor() {
+    super(502, "upstream_error", "The model provider request failed.");
+    this.name = "LlmUpstreamError";
+  }
+}
+
 export interface ErrorBody {
   error: { code: string; message: string };
 }
