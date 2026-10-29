@@ -1,0 +1,7 @@
+node_modules
+dist
+.env
+.model-cache
+.data
+package-lock.json
+*.log

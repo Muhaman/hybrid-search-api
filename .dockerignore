@@ -1,0 +1,8 @@
+node_modules
+dist
+.git
+.env
+.model-cache
+.data
+bench
+test
