@@ -34,14 +34,20 @@ describe("GET /v1/search", () => {
     expect(res.status).toBe(400);
   });
 
-  it("finds documents in every mode", async () => {
+  it("ranks the lexical match first in bm25 and hybrid modes", async () => {
     const app = await seeded();
-    for (const mode of ["bm25", "vector", "hybrid"]) {
+    for (const mode of ["bm25", "hybrid"]) {
       const res = await request(app).get("/v1/search").query({ q: "espresso grind", mode });
       expect(res.status).toBe(200);
       expect(res.body.results[0]).toMatchObject({ id: "b", title: "Espresso" });
       expect(res.body.results[0].snippet).toContain("espresso");
     }
+  });
+
+  it("returns every document in vector mode", async () => {
+    const app = await seeded();
+    const res = await request(app).get("/v1/search").query({ q: "espresso grind", mode: "vector" });
+    expect(res.body.results.map((h: { id: string }) => h.id).sort()).toEqual(["a", "b", "c"]);
   });
 
   it("limits results to k", async () => {
